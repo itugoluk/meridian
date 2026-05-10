@@ -1,0 +1,78 @@
+@import url("https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-white text-ink-900 antialiased;
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html.dark body {
+  @apply bg-ink-950 text-ink-100;
+}
+
+::selection {
+  background: #9c2c44;
+  color: #fff;
+}
+
+/* Hairline divider — used over generic shadows */
+.hairline {
+  @apply border-ink-200 dark:border-ink-800;
+}
+
+.surface {
+  @apply bg-white dark:bg-ink-900 border border-ink-200/70 dark:border-ink-800/70;
+}
+
+.surface-subtle {
+  @apply bg-ink-50 dark:bg-ink-900/40 border border-ink-200/60 dark:border-ink-800/60;
+}
+
+/* Editorial display type */
+.display {
+  font-family: "Cabinet Grotesk", "Geist", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+/* Subtle scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.25);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(113, 113, 122, 0.45); }
+
+/* Animated marquee fade mask */
+.mask-fade-x {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+/* Form input — shared across onboarding and essay editor */
+.input {
+  @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-[15px] outline-none transition-colors placeholder:text-ink-400 focus:border-ink-950 dark:border-ink-800 dark:bg-ink-900 dark:focus:border-white;
+}
+.textarea {
+  @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-[15px] leading-relaxed outline-none transition-colors placeholder:text-ink-400 focus:border-ink-950 dark:border-ink-800 dark:bg-ink-900 dark:focus:border-white resize-y;
+}
