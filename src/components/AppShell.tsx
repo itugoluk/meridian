@@ -1,8 +1,11 @@
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { ArrowUpRight, Calendar, Compass, GraduationCap, House, PaperPlaneTilt, SquaresFour, UserCircle, Sparkle } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { ArrowUpRight, Calendar, Compass, GraduationCap, House, PaperPlaneTilt, SignOut, SquaresFour, UserCircle, Sparkle, CaretUp } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 import { Logo } from "./Logo";
 import { useStore } from "../store/useStore";
+import { useAuth, useCurrentAccount } from "../store/useAuth";
 import { cn } from "../lib/cn";
 
 const NAV = [
@@ -17,11 +20,25 @@ const NAV = [
 export function AppShell() {
   const profile = useStore((s) => s.profile);
   const isPro = useStore((s) => s.isPro);
+  const account = useCurrentAccount();
+  const signOut = useAuth((s) => s.signOut);
+  const navigate = useNavigate();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const displayName = account?.name ?? profile?.name ?? "Guest";
+  const displayEmail = account?.email ?? "";
+  const initials = displayName.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+
+  const handleSignOut = () => {
+    setMenuOpen(false);
+    signOut();
+    navigate("/");
+  };
 
   return (
     <div className="grid min-h-[100dvh] grid-cols-1 lg:grid-cols-[260px_1fr] bg-white dark:bg-ink-950">
-      <aside className="hidden lg:flex flex-col border-r border-ink-200/70 dark:border-ink-800/70 px-6 py-7">
+      <aside className="hidden lg:flex lg:sticky lg:top-0 lg:self-start lg:h-[100dvh] flex-col border-r border-ink-200/70 dark:border-ink-800/70 px-6 py-7 overflow-y-auto">
         <Link to="/" className="mb-9 inline-flex">
           <Logo />
         </Link>
@@ -71,19 +88,58 @@ export function AppShell() {
               </div>
             </Link>
           )}
-          <Link to="/app/profile" className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-ink-50 dark:hover:bg-ink-900">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-accent/80 to-accent-deep text-[12px] font-semibold text-white">
-              {profile ? profile.name.split(" ").map((n) => n[0]).slice(0, 2).join("") : <UserCircle size={18} />}
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-[13px] font-medium text-ink-900 dark:text-white">
-                {profile?.name ?? "Guest"}
+          <div className="relative">
+            <AnimatePresence>
+              {menuOpen && (
+                <>
+                  <button
+                    aria-label="Close menu"
+                    onClick={() => setMenuOpen(false)}
+                    className="fixed inset-0 z-30 cursor-default"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 24 }}
+                    className="absolute bottom-full left-0 right-0 z-40 mb-2 overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft dark:border-ink-800/70 dark:bg-ink-900"
+                  >
+                    <Link
+                      to="/app/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium hover:bg-ink-50 dark:hover:bg-ink-800/60"
+                    >
+                      <UserCircle size={14} weight="duotone" /> Profile & settings
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-2.5 border-t border-ink-200/60 px-4 py-2.5 text-left text-[13px] font-medium text-accent hover:bg-accent-soft/30 dark:border-ink-800/60 dark:hover:bg-accent/10"
+                    >
+                      <SignOut size={14} weight="duotone" /> Sign out
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-ink-50 dark:hover:bg-ink-900"
+            >
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-accent/80 to-accent-deep text-[12px] font-semibold text-white">
+                {initials || <UserCircle size={18} />}
               </div>
-              <div className="truncate text-[11px] text-ink-500 dark:text-ink-400">
-                {isPro ? "Pro plan" : "Free plan"}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-medium text-ink-900 dark:text-white">
+                  {displayName}
+                </div>
+                <div className="truncate text-[11px] text-ink-500 dark:text-ink-400">
+                  {displayEmail || (isPro ? "Pro plan" : "Free plan")}
+                </div>
               </div>
-            </div>
-          </Link>
+              <CaretUp size={12} weight="bold" className={`shrink-0 text-ink-400 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         </div>
       </aside>
 

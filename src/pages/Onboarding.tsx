@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import { Logo } from "../components/Logo";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { useStore, type Profile } from "../store/useStore";
+import { useCurrentAccount } from "../store/useAuth";
 
 const SYSTEMS: Profile["system"][] = ["IB", "American", "A-Level", "GCSE", "Bachillerato", "Abitur"];
 const GPA_LABELS: Record<Profile["system"], { hint: string; max: number; placeholder: string }> = {
@@ -48,9 +49,11 @@ const STEPS = ["Profile", "Academics", "Targets"];
 export default function Onboarding() {
   const navigate = useNavigate();
   const setProfile = useStore((s) => s.setProfile);
+  const account = useCurrentAccount();
+  const existingProfile = useStore.getState().profile;
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<Profile>({
-    name: "",
+  const [draft, setDraft] = useState<Profile>(existingProfile ?? {
+    name: account?.name ?? "",
     age: 16,
     grade: 11,
     location: "",

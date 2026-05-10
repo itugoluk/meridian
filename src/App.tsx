@@ -1,12 +1,17 @@
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { BetaBanner } from "./components/BetaBanner";
 import { useStore } from "./store/useStore";
+import { useAuth } from "./store/useAuth";
+import { useAccountSync } from "./store/syncAccount";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Manifesto = lazy(() => import("./pages/Manifesto"));
 const CounselorsPublic = lazy(() => import("./pages/CounselorsPublic"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Auth = lazy(() => import("./pages/Auth"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Matches = lazy(() => import("./pages/Matches"));
@@ -33,18 +38,30 @@ function Fallback() {
   );
 }
 
-export default function App() {
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const email = useAuth((s) => s.currentEmail);
+  const location = useLocation();
+  if (!email) {
+    return <Navigate to={`/auth?mode=signin&next=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+  return <>{children}</>;
+}
+
+function AppRoot() {
+  useAccountSync();
   return (
-    <BrowserRouter>
-      <ThemeSync />
+    <>
+      <BetaBanner />
       <Suspense fallback={<Fallback />}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/manifesto" element={<Manifesto />} />
           <Route path="/counselors-public" element={<CounselorsPublic />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/app" element={<AppShell />}>
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+          <Route path="/app" element={<RequireAuth><AppShell /></RequireAuth>}>
             <Route index element={<Dashboard />} />
             <Route path="matches" element={<Matches />} />
             <Route path="majors" element={<Majors />} />
@@ -55,6 +72,15 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <ThemeSync />
+      <AppRoot />
     </BrowserRouter>
   );
 }

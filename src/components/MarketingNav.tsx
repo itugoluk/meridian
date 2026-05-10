@@ -4,10 +4,10 @@ import { ArrowRight } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
-import { useStore } from "../store/useStore";
+import { useAuth } from "../store/useAuth";
 
 export function MarketingNav() {
-  const profile = useStore((s) => s.profile);
+  const currentEmail = useAuth((s) => s.currentEmail);
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/60 bg-white/85 backdrop-blur-xl dark:border-ink-800/60 dark:bg-ink-950/85">
@@ -18,17 +18,36 @@ export function MarketingNav() {
           <NavItem to="/pricing">Pricing</NavItem>
           <NavItem to="/manifesto">Manifesto</NavItem>
           <NavItem to="/counselors-public">For counselors</NavItem>
+          <NavItem to="/contact">Contact</NavItem>
         </nav>
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            to={profile ? "/app" : "/onboarding"}
-            className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-950 px-4 text-[13px] font-medium text-white transition-transform hover:-translate-y-px dark:bg-white dark:text-ink-950"
-          >
-            <MagneticInline>{profile ? "Open app" : "Start free"}</MagneticInline>
-            <ArrowRight size={13} weight="bold" />
-          </Link>
+          {currentEmail ? (
+            <Link
+              to="/app"
+              className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-950 px-4 text-[13px] font-medium text-white transition-transform hover:-translate-y-px dark:bg-white dark:text-ink-950"
+            >
+              <MagneticInline>Open app</MagneticInline>
+              <ArrowRight size={13} weight="bold" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/auth?mode=signin"
+                className="hidden md:inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-medium text-ink-700 hover:text-ink-950 dark:text-ink-300 dark:hover:text-white"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/auth?mode=signup"
+                className="hidden md:inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-950 px-4 text-[13px] font-medium text-white transition-transform hover:-translate-y-px dark:bg-white dark:text-ink-950"
+              >
+                <MagneticInline>Start free</MagneticInline>
+                <ArrowRight size={13} weight="bold" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

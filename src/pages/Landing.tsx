@@ -52,7 +52,7 @@ export default function Landing() {
               className="mt-9 flex flex-wrap items-center gap-3"
             >
               <Link
-                to="/onboarding"
+                to="/auth?mode=signup"
                 className="inline-flex h-12 items-center gap-2 rounded-full bg-ink-950 px-6 text-[15px] font-medium text-white transition-transform hover:-translate-y-px active:scale-[0.98] dark:bg-white dark:text-ink-950"
               >
                 Start your plan <ArrowRight size={15} weight="bold" />
@@ -219,7 +219,7 @@ export default function Landing() {
           </div>
           <div className="lg:col-span-4 lg:flex lg:items-end lg:justify-end">
             <Link
-              to="/onboarding"
+              to="/auth?mode=signup"
               className="inline-flex h-14 items-center gap-2 rounded-full bg-ink-950 px-7 text-[16px] font-medium text-white transition-transform hover:-translate-y-px dark:bg-white dark:text-ink-950"
             >
               Build your plan <ArrowRight size={16} weight="bold" />

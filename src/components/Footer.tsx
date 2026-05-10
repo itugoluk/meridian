@@ -13,7 +13,7 @@ export function Footer() {
         </div>
 
         <FooterCol title="Product">
-          <FooterLink to="/onboarding">Get started</FooterLink>
+          <FooterLink to="/auth?mode=signup">Get started</FooterLink>
           <FooterLink to="/app">App</FooterLink>
           <FooterLink to="/pricing">Pricing</FooterLink>
         </FooterCol>
@@ -26,8 +26,8 @@ export function Footer() {
 
         <FooterCol title="Company">
           <FooterLink to="/manifesto">About</FooterLink>
-          <FooterLink to="/pricing">Privacy</FooterLink>
-          <FooterLink to="/pricing">Terms</FooterLink>
+          <FooterLink to="/contact">Contact</FooterLink>
+          <FooterLink to="/auth?mode=signin">Sign in</FooterLink>
         </FooterCol>
       </div>
       <div className="border-t border-ink-200/60 dark:border-ink-800/60">
