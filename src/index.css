@@ -69,10 +69,14 @@ html.dark body {
   -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
 }
 
-/* Form input — shared across onboarding and essay editor */
-.input {
-  @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-[15px] outline-none transition-colors placeholder:text-ink-400 focus:border-ink-950 dark:border-ink-800 dark:bg-ink-900 dark:focus:border-white;
-}
-.textarea {
-  @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-[15px] leading-relaxed outline-none transition-colors placeholder:text-ink-400 focus:border-ink-950 dark:border-ink-800 dark:bg-ink-900 dark:focus:border-white resize-y;
+/* Form input — shared across onboarding, auth, contact, essay editor.
+   Lives in the components layer so utility overrides (pl-10 for an icon)
+   actually win. */
+@layer components {
+  .input {
+    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-[15px] outline-none transition-colors placeholder:text-ink-400 focus:border-ink-950 dark:border-ink-800 dark:bg-ink-900 dark:focus:border-white;
+  }
+  .textarea {
+    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-[15px] leading-relaxed outline-none transition-colors placeholder:text-ink-400 focus:border-ink-950 dark:border-ink-800 dark:bg-ink-900 dark:focus:border-white resize-y;
+  }
 }
