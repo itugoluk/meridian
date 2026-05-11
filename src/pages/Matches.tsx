@@ -85,7 +85,15 @@ export default function Matches() {
                       {String(matches.indexOf(m) + 1).padStart(2, "0")}
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate font-display text-[19px] font-bold tracking-extra-tight">{m.school.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-display text-[19px] font-bold tracking-extra-tight">{m.school.name}</span>
+                        {m.school.ivyLeague && (
+                          <span className="hidden md:inline-flex shrink-0 rounded-full border border-accent/40 bg-accent/10 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider text-accent">Ivy</span>
+                        )}
+                        {m.school.top100World && !m.school.ivyLeague && (
+                          <span className="hidden md:inline-flex shrink-0 rounded-full border border-ink-300 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider text-ink-600 dark:border-ink-700 dark:text-ink-400">T100</span>
+                        )}
+                      </div>
                       <div className="truncate text-[12px] font-mono uppercase tracking-widest text-ink-500">
                         {m.school.city} · {m.school.country}
                       </div>
@@ -141,6 +149,17 @@ export default function Matches() {
                           <Stat label="Median SAT" value={m.school.median.sat.toString()} />
                           <Stat label="Sticker" value={formatUsd(m.school.stickerUsd)} />
                           <Stat label="Net (est.)" value={formatUsd(m.netCost)} highlight />
+                          <div className="col-span-2 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-ink-200/70 pt-5 dark:border-ink-800/70">
+                            <Stat label="Test policy" value={m.school.testPolicy} />
+                            <Stat label="RD deadline" value={m.school.appDeadline} />
+                            <Stat label="Early option" value={m.school.earlyOption} />
+                            <Stat label="Application" value={m.school.appPlatform} />
+                            <Stat label="Intl undergrads" value={`${m.school.intlStudentPct}%`} />
+                            <Stat label="Undergrad size" value={m.school.undergradSize.toLocaleString()} />
+                            <div className="col-span-2">
+                              <Stat label="Most common system" value={m.school.preferredSystem} />
+                            </div>
+                          </div>
                           <div className="col-span-2">
                             <div className="text-[10px] font-mono uppercase tracking-widest text-ink-500">Strengths</div>
                             <div className="mt-2 flex flex-wrap gap-1.5">

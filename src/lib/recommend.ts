@@ -149,6 +149,9 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
   if (!school.systemsAccepted.includes(profile.system)) {
     fit -= 14;
     reasons.push(`Application from ${profile.system} candidates is uncommon here.`);
+  } else if (school.preferredSystem === profile.system) {
+    fit += 5;
+    reasons.push(`${profile.system} is the system this school most commonly admits from.`);
   }
 
   // 5. Vibe match (max +8)
