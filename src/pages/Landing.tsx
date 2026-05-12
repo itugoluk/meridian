@@ -68,9 +68,9 @@ export default function Landing() {
 
             {/* Inline stats — no boxes */}
             <div className="mt-14 grid grid-cols-3 gap-y-4 border-t border-ink-200/70 pt-7 dark:border-ink-800/70">
-              <Stat n="100+" label="Schools indexed" />
+              <Stat n="208" label="Schools indexed" />
               <Stat n="6" label="School systems" />
-              <Stat n="16" label="Countries" />
+              <Stat n="27" label="Countries" />
             </div>
           </div>
 
@@ -108,7 +108,7 @@ export default function Landing() {
             icon={SquaresFour}
             kicker="Core"
             title="College Match"
-            description="Weighted recommendations across 100+ universities in 16 countries. Reach / Target / Likely tiering, transparent reasoning, and a portfolio-balance audit. Free for the first three matches."
+            description="Weighted recommendations across 208 universities in 27 countries. Reach / Target / Likely tiering, transparent reasoning, and a portfolio-balance audit. Free for the first three matches."
           >
             <MatchPreview />
           </FeatureCard>

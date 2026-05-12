@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookmarkSimple, Funnel, Info, Lock } from "@phosphor-icons/react";
+import { ArrowUpRight, BookmarkSimple, CaretLeft, CaretRight, Funnel, Info, Lock } from "@phosphor-icons/react";
 import { useStore } from "../store/useStore";
-import { recommendSchools, formatUsd, type Verdict, distributionFor } from "../lib/recommend";
+import { recommendSchools, formatUsd, type Verdict, distributionFor, RECOMMENDATION_CAP } from "../lib/recommend";
+import { SchoolLogo } from "../components/SchoolLogo";
 
 const VERDICTS: Verdict[] = ["Reach", "Target", "Likely"];
 
@@ -14,6 +15,7 @@ const verdictTint: Record<Verdict, string> = {
 };
 
 const FREE_LIMIT = 3;
+const PAGE_SIZE = 25;
 
 export default function Matches() {
   const profile = useStore((s) => s.profile);
@@ -22,12 +24,20 @@ export default function Matches() {
   const toggle = useStore((s) => s.toggleSavedSchool);
   const [filter, setFilter] = useState<"All" | Verdict>("All");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   const matches = useMemo(() => (profile ? recommendSchools(profile) : []), [profile]);
   const distribution = useMemo(() => distributionFor(matches), [matches]);
 
   const filtered = matches.filter((m) => filter === "All" || m.verdict === filter);
-  const visible = isPro ? filtered : filtered.slice(0, FREE_LIMIT);
+
+  useEffect(() => { setPage(0); }, [filter, isPro]);
+
+  const pageCount = isPro ? Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)) : 1;
+  const safePage = Math.min(page, pageCount - 1);
+  const visible = isPro
+    ? filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
+    : filtered.slice(0, FREE_LIMIT);
   const lockedCount = isPro ? 0 : Math.max(0, filtered.length - FREE_LIMIT);
 
   if (!profile) return <NoProfile />;
@@ -39,7 +49,7 @@ export default function Matches() {
           <div className="text-[11px] font-mono uppercase tracking-widest text-accent">College Match</div>
           <h1 className="display mt-2 text-4xl md:text-5xl">{matches.length} schools, ranked for you.</h1>
           <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-500 dark:text-ink-400">
-            Each fit score weighs your grades, country preference, interest alignment, school-system acceptance, vibe, and budget. Expand any school for the reasoning.
+            Each fit score weighs your grades, country preference, interest alignment, school-system acceptance, vibe, and budget. Expand any school for the reasoning. Shortlist capped at {RECOMMENDATION_CAP} schools to keep it actionable.
           </p>
         </div>
         <div className="flex items-center gap-3 text-[12px] font-mono uppercase tracking-widest text-ink-500">
@@ -80,10 +90,11 @@ export default function Matches() {
                   onClick={() => setOpenId(open ? null : m.school.id)}
                   className="flex w-full items-center justify-between gap-4 px-7 py-5 text-left transition-colors hover:bg-ink-50/60 dark:hover:bg-ink-900/40"
                 >
-                  <div className="flex min-w-0 items-center gap-5">
+                  <div className="flex min-w-0 items-center gap-4">
                     <span className="font-mono text-[14px] tabular-nums text-ink-400 w-8">
                       {String(matches.indexOf(m) + 1).padStart(2, "0")}
                     </span>
+                    <SchoolLogo website={m.school.website} name={m.school.name} size={36} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-display text-[19px] font-bold tracking-extra-tight">{m.school.name}</span>
@@ -130,9 +141,9 @@ export default function Matches() {
                     >
                       <div className="grid grid-cols-1 gap-8 border-t border-ink-200/70 bg-ink-50/40 px-7 py-7 md:grid-cols-12 dark:border-ink-800/70 dark:bg-ink-950/40">
                         <div className="md:col-span-7">
-                          <p className="text-[15px] leading-relaxed text-ink-700 dark:text-ink-300">{m.school.blurb}</p>
+                          <p className="text-[15px] leading-relaxed text-ink-700 dark:text-ink-300 whitespace-pre-line">{m.school.blurb}</p>
                           <div className="mt-6">
-                            <div className="text-[10px] font-mono uppercase tracking-widest text-ink-500">Why this fits you</div>
+                            <div className="text-[10px] font-mono uppercase tracking-widest text-ink-500">{m.verdict === "Reach" && m.fit < 50 ? "Why this is a stretch" : "Why this fits you"}</div>
                             <ul className="mt-3 space-y-2">
                               {m.reasons.map((r, idx) => (
                                 <li key={idx} className="flex items-start gap-2.5 text-[14px] text-ink-700 dark:text-ink-300">
@@ -141,6 +152,16 @@ export default function Matches() {
                               ))}
                             </ul>
                           </div>
+                          {m.school.website && (
+                            <a
+                              href={`https://www.${m.school.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-6 inline-flex items-center gap-1.5 text-[13px] font-medium text-accent hover:underline"
+                            >
+                              Visit {m.school.website} <ArrowUpRight size={13} weight="bold" />
+                            </a>
+                          )}
                         </div>
                         <div className="md:col-span-5 grid grid-cols-2 gap-x-6 gap-y-5">
                           <Stat label="Intl admit" value={`${m.school.intlAcceptance.toFixed(1)}%`} />
@@ -188,7 +209,7 @@ export default function Matches() {
                 {lockedCount} more schools matched.
               </h3>
               <p className="mt-2 text-[14.5px] text-ink-500 dark:text-ink-400">
-                Free tier shows your top {FREE_LIMIT}. Pro unlocks the full ranked list, side-by-side compare, and scholarship search.
+                Free tier shows your top {FREE_LIMIT}. Pro unlocks the full ranked list (up to {RECOMMENDATION_CAP} schools), side-by-side compare, and scholarship search.
               </p>
               <Link to="/pricing" className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-ink-950 px-5 text-[14px] font-medium text-white dark:bg-white dark:text-ink-950">
                 Upgrade to Pro · $14/mo
@@ -197,6 +218,32 @@ export default function Matches() {
           </div>
         )}
       </div>
+
+      {isPro && pageCount > 1 && (
+        <div className="mt-8 flex items-center justify-between gap-4 px-1">
+          <div className="font-mono text-[12px] uppercase tracking-widest text-ink-500">
+            Page {safePage + 1} of {pageCount} · {filtered.length} {filter === "All" ? "schools" : filter.toLowerCase()}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setOpenId(null); setPage(Math.max(0, safePage - 1)); }}
+              disabled={safePage === 0}
+              className="grid h-9 w-9 place-items-center rounded-full border border-ink-200 text-ink-700 transition-colors hover:bg-ink-50 disabled:opacity-30 disabled:hover:bg-transparent dark:border-ink-800 dark:text-ink-300 dark:hover:bg-ink-900"
+              aria-label="Previous page"
+            >
+              <CaretLeft size={14} weight="bold" />
+            </button>
+            <button
+              onClick={() => { setOpenId(null); setPage(Math.min(pageCount - 1, safePage + 1)); }}
+              disabled={safePage >= pageCount - 1}
+              className="grid h-9 w-9 place-items-center rounded-full border border-ink-200 text-ink-700 transition-colors hover:bg-ink-50 disabled:opacity-30 disabled:hover:bg-transparent dark:border-ink-800 dark:text-ink-300 dark:hover:bg-ink-900"
+              aria-label="Next page"
+            >
+              <CaretRight size={14} weight="bold" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

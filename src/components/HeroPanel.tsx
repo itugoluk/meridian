@@ -46,7 +46,7 @@ export const HeroPanel = memo(function HeroPanel() {
       {/* Floating header chip */}
       <div className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full border border-ink-200/70 bg-white/90 px-3 py-1.5 text-[11px] font-mono uppercase tracking-widest text-ink-500 backdrop-blur dark:border-ink-800/70 dark:bg-ink-900/90 dark:text-ink-400">
         <span className="h-1.5 w-1.5 animate-breathe rounded-full bg-emerald-500" />
-        Live match · 100+ schools
+        Live match · 208 schools
       </div>
 
       {/* Stack */}

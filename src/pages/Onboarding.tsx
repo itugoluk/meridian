@@ -17,7 +17,12 @@ const GPA_LABELS: Record<Profile["system"], { hint: string; max: number; placeho
   Abitur: { hint: "German Abitur (1.0 best, 4.0 minimum)", max: 4.0, placeholder: "e.g. 1.8" },
 };
 
-const COUNTRIES = ["United States", "United Kingdom", "Canada", "Netherlands", "Spain", "Singapore", "Australia", "Germany", "Switzerland", "France", "Ireland", "Italy", "Hong Kong", "Japan", "China", "United Arab Emirates"];
+const COUNTRIES = [
+  "United States", "United Kingdom", "Canada", "Netherlands", "Spain", "Singapore", "Australia",
+  "Germany", "Switzerland", "France", "Ireland", "Italy", "Hong Kong", "Japan", "China",
+  "United Arab Emirates", "Sweden", "Denmark", "Norway", "Belgium", "Austria", "South Korea",
+  "India", "Taiwan", "Lebanon", "Saudi Arabia", "Israel",
+];
 
 const CLASS_SUGGESTIONS = [
   "Mathematics", "Computer Science", "Physics", "Chemistry", "Biology",

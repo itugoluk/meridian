@@ -130,9 +130,12 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
     reasons.push(`Located in ${school.country}, which you flagged as a target.`);
   } else {
     fit -= 6;
+    if (profile.targetCountries.length > 0) {
+      reasons.push(`${school.country} isn't on your target list (${profile.targetCountries.slice(0, 3).join(", ")}); applying here means committing to a country you didn't shortlist.`);
+    }
   }
 
-  // 3. Interest / strength overlap (max +22)
+  // 3. Interest / strength overlap (max +22, or a negative-fit explanation)
   const interestMatches = countSchoolInterestMatches(school.strengths, profile.interests);
   if (interestMatches >= 3) {
     fit += 22;
@@ -143,6 +146,11 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
   } else if (interestMatches === 1) {
     fit += 9;
     reasons.push(`One major strength aligns with your interests.`);
+  } else if (profile.interests.length > 0) {
+    fit -= 12;
+    const topStrengths = school.strengths.slice(0, 3).join(", ");
+    const topInterests = profile.interests.slice(0, 3).join(", ");
+    reasons.push(`Academic focus is the problem: this school's flagship areas (${topStrengths}) don't map to your stated interests (${topInterests}).`);
   }
 
   // 4. School-system acceptance (gate)
@@ -183,15 +191,18 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
     school,
     fit: Math.round(fit),
     verdict,
-    reasons: reasons.slice(0, 4),
+    reasons: reasons.slice(0, 5),
     netCost: school.netCostUsd,
   };
 }
 
+export const RECOMMENDATION_CAP = 150;
+
 export function recommendSchools(profile: Profile): SchoolMatch[] {
   return SCHOOLS
     .map((s) => scoreSchool(profile, s))
-    .sort((a, b) => b.fit - a.fit);
+    .sort((a, b) => b.fit - a.fit)
+    .slice(0, RECOMMENDATION_CAP);
 }
 
 export type MajorMatch = {
