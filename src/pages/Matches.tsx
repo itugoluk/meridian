@@ -94,7 +94,7 @@ export default function Matches() {
                     <span className="font-mono text-[14px] tabular-nums text-ink-400 w-8">
                       {String(matches.indexOf(m) + 1).padStart(2, "0")}
                     </span>
-                    <SchoolLogo website={m.school.website} name={m.school.name} size={36} />
+                    <SchoolLogo website={m.school.website} name={m.school.name} acronym={m.school.acronym} logoUrl={m.school.logoUrl} size={36} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-display text-[19px] font-bold tracking-extra-tight">{m.school.name}</span>
