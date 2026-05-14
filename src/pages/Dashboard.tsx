@@ -24,7 +24,7 @@ export default function Dashboard() {
     }
   }, [profile, tutorialSeen]);
 
-  const matches = useMemo(() => (profile ? recommendSchools(profile) : []), [profile]);
+  const matches = useMemo(() => (profile ? recommendSchools(profile).matches : []), [profile]);
   const majors = useMemo(() => (profile ? recommendMajors(profile) : []), [profile]);
   const distribution = useMemo(() => distributionFor(matches), [matches]);
   const timeline = useMemo(() => buildTimeline(profile), [profile]);
