@@ -104,12 +104,21 @@ export default function Pricing() {
             <p className="mt-3 text-[14.5px] leading-relaxed text-ink-600 dark:text-ink-400">
               Everything you need to build a viable list and your first essay. No card required.
             </p>
-            <Link
-              to="/onboarding"
-              className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-ink-200 px-6 text-[14.5px] font-medium dark:border-ink-800"
-            >
-              Start free <ArrowRight size={14} weight="bold" />
-            </Link>
+            {isPro ? (
+              <button
+                onClick={downgrade}
+                className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-ink-200 px-6 text-[14.5px] font-medium dark:border-ink-800"
+              >
+                Downgrade to Free <ArrowRight size={14} weight="bold" />
+              </button>
+            ) : (
+              <Link
+                to="/onboarding"
+                className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-ink-200 px-6 text-[14.5px] font-medium dark:border-ink-800"
+              >
+                Start free <ArrowRight size={14} weight="bold" />
+              </Link>
+            )}
             <ul className="mt-9 space-y-3">
               {FREE_FEATURES.map((it) => (
                 <FeatureRow key={it.f} {...it} />
@@ -136,13 +145,20 @@ export default function Pricing() {
             <p className="mt-3 text-[14.5px] leading-relaxed opacity-80">
               Unlimited applications, counselor sessions, scholarships, and side-by-side compare. Cancel anytime.
             </p>
-            <button
-              onClick={isPro ? downgrade : handleUpgrade}
-              className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent px-6 text-[14.5px] font-medium text-white transition-transform hover:-translate-y-px"
-            >
-              {isPro ? "Downgrade to Free" : `Upgrade to Pro · $${proPrice}${proPeriod}`}
-              <ArrowRight size={14} weight="bold" />
-            </button>
+            {isPro ? (
+              <div className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white/10 px-6 text-[14.5px] font-medium text-white/40 dark:bg-ink-950/10 dark:text-ink-950/40 cursor-default select-none">
+                <Check size={14} weight="bold" />
+                Already subscribed
+              </div>
+            ) : (
+              <button
+                onClick={handleUpgrade}
+                className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent px-6 text-[14.5px] font-medium text-white transition-transform hover:-translate-y-px"
+              >
+                {`Upgrade to Pro · $${proPrice}${proPeriod}`}
+                <ArrowRight size={14} weight="bold" />
+              </button>
+            )}
             <ul className="mt-9 space-y-3">
               {PRO_FEATURES.map((it) => (
                 <FeatureRow key={it.f} {...it} highlighted />
