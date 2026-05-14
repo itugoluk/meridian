@@ -6,11 +6,25 @@ export type Verdict = "Reach" | "Target" | "Likely";
 
 export type SchoolMatch = {
   school: School;
-  fit: number;          // 0–100
+  fit: number;            // 0–100, qualitative fit (interests, country, vibe, budget, GPA)
+  admitProbability: number; // 0–100, estimated chance of admission
   verdict: Verdict;
-  reasons: string[];
+  strengths: string[];    // positive factors
+  limitations: string[];  // honest tradeoffs the student should weigh
   netCost: number;
 };
+
+// Multiplier on raw intl-acceptance rate based on how far the student sits
+// from the school's median admit GPA. Positive gap = student is below median.
+function gpaMultiplier(gpaGap: number): number {
+  if (gpaGap <= -0.3) return 1.4;
+  if (gpaGap <= 0) return 1.1 + (-gpaGap / 0.3) * 0.3;
+  if (gpaGap <= 0.2) return 1.1 - (gpaGap / 0.2) * 0.25;
+  if (gpaGap <= 0.4) return 0.85 - ((gpaGap - 0.2) / 0.2) * 0.35;
+  if (gpaGap <= 0.6) return 0.5 - ((gpaGap - 0.4) / 0.2) * 0.25;
+  if (gpaGap <= 0.8) return 0.25 - ((gpaGap - 0.6) / 0.2) * 0.15;
+  return 0.1;
+}
 
 const GPA_BY_SYSTEM: Record<Profile["system"], (val: number) => number> = {
   // Calibrated against real conversion tables, not linear ratios.
@@ -104,102 +118,111 @@ function overlap<T extends string>(a: T[], b: T[]) {
 }
 
 export function scoreSchool(profile: Profile, school: School): SchoolMatch {
-  const reasons: string[] = [];
+  const strengths: string[] = [];
+  const limitations: string[] = [];
   let fit = 50;
 
-  // 1. GPA alignment (max ±25)
   const studentGpa = normalizeGpa(profile.gpa, profile.system);
-  const gpaDelta = studentGpa - school.median.gpa;
-  if (gpaDelta >= 0.05) {
+  const gpaGap = school.median.gpa - studentGpa;
+
+  // 1. GPA alignment — drives fit and shows up in strengths/limitations.
+  if (gpaGap <= -0.1) {
     fit += 18;
-    reasons.push(`Your grades exceed the median admit profile.`);
-  } else if (gpaDelta >= -0.1) {
+    strengths.push(`Your grades exceed the median admit profile (${school.median.gpa.toFixed(2)}).`);
+  } else if (gpaGap <= 0.1) {
     fit += 8;
-    reasons.push(`Your grades are within the typical admit range.`);
+    strengths.push(`Your grades sit inside the typical admit range.`);
+  } else if (gpaGap <= 0.25) {
+    fit -= 6;
+    limitations.push(`Grades are ${gpaGap.toFixed(2)} GPA below median (${school.median.gpa.toFixed(2)}) — strong essays will matter.`);
   } else {
-    // Smooth gradient: -6 at delta=-0.1, steepening to -22 at delta≈-0.8
-    const penalty = Math.max(-22, -6 + gpaDelta * 20);
+    const penalty = Math.max(-22, -6 + (-gpaGap) * 20);
     fit += penalty;
-    if (gpaDelta >= -0.3) {
-      reasons.push(`Grades slightly below median — strong essays will matter.`);
-    } else {
-      reasons.push(`Grades are well below the median; treat this as a reach.`);
-    }
+    limitations.push(`Grades are ${gpaGap.toFixed(2)} GPA below the median admit (${school.median.gpa.toFixed(2)}); treat this as a stretch on academics alone.`);
   }
 
-  // 2. Country alignment (max +15)
+  // 2. Country alignment.
   if (profile.targetCountries.includes(school.country)) {
     fit += 14;
-    reasons.push(`Located in ${school.country}, which you flagged as a target.`);
-  } else {
+    strengths.push(`Located in ${school.country}, which you flagged as a target.`);
+  } else if (profile.targetCountries.length > 0) {
     fit -= 6;
-    if (profile.targetCountries.length > 0) {
-      reasons.push(`${school.country} isn't on your target list (${profile.targetCountries.slice(0, 3).join(", ")}); applying here means committing to a country you didn't shortlist.`);
-    }
+    limitations.push(`${school.country} isn't on your target list (${profile.targetCountries.slice(0, 3).join(", ")}); applying here means committing to a country you didn't shortlist.`);
   }
 
-  // 3. Interest / strength overlap (max +22, or a negative-fit explanation)
+  // 3. Interest / strength overlap.
   const interestMatches = countSchoolInterestMatches(school.strengths, profile.interests);
   if (interestMatches >= 3) {
     fit += 22;
-    reasons.push(`${interestMatches} of this school's strengths line up with your interests.`);
+    strengths.push(`${interestMatches} of this school's strengths line up with your interests.`);
   } else if (interestMatches === 2) {
     fit += 16;
-    reasons.push(`Two of this school's strengths match your interests directly.`);
+    strengths.push(`Two of this school's strengths match your interests directly.`);
   } else if (interestMatches === 1) {
     fit += 9;
-    reasons.push(`One major strength aligns with your interests.`);
+    strengths.push(`One flagship area aligns with your interests.`);
   } else if (profile.interests.length > 0) {
     fit -= 12;
-    const topStrengths = school.strengths.slice(0, 3).join(", ");
-    const topInterests = profile.interests.slice(0, 3).join(", ");
-    reasons.push(`Academic focus is the problem: this school's flagship areas (${topStrengths}) don't map to your stated interests (${topInterests}).`);
+    limitations.push(`Flagship areas (${school.strengths.slice(0, 3).join(", ")}) don't map to your stated interests (${profile.interests.slice(0, 3).join(", ")}).`);
   }
 
-  // 4. School-system acceptance (gate)
+  // 4. School-system acceptance.
   if (!school.systemsAccepted.includes(profile.system)) {
     fit -= 14;
-    reasons.push(`Application from ${profile.system} candidates is uncommon here.`);
+    limitations.push(`${profile.system} applications are uncommon here.`);
   } else if (school.preferredSystem === profile.system) {
     fit += 5;
-    reasons.push(`${profile.system} is the system this school most commonly admits from.`);
+    strengths.push(`${profile.system} is the system this school most commonly admits from.`);
   }
 
-  // 5. Vibe match (max +8)
+  // 5. Vibe.
   const vibeMatches = overlap(school.vibe as string[], profile.vibePreferences);
   fit += Math.min(8, vibeMatches * 3);
+  if (vibeMatches >= 2) {
+    strengths.push(`Campus character (${(school.vibe as string[]).slice(0, 3).join(", ")}) matches your vibe preferences.`);
+  }
 
-  // 6. Aid alignment for budget-sensitive students (max +10)
+  // 6. Budget.
   if (profile.budgetUsd && profile.budgetUsd < school.stickerUsd) {
     if (school.netCostUsd <= profile.budgetUsd) {
       fit += 10;
-      reasons.push(`Net cost (${formatUsd(school.netCostUsd)}) fits inside your stated budget.`);
+      strengths.push(`Net cost (${formatUsd(school.netCostUsd)}) fits inside your stated budget.`);
     } else {
       fit -= 8;
-      reasons.push(`Net cost (${formatUsd(school.netCostUsd)}) sits above your budget.`);
+      limitations.push(`Net cost (${formatUsd(school.netCostUsd)}) sits above your budget (${formatUsd(profile.budgetUsd)}).`);
     }
   }
 
   fit = Math.max(2, Math.min(98, fit));
 
-  // Verdict — gates on selectivity first, then fit.
+  // Admit probability — the headline number used to gate the verdict.
   const intl = school.intlAcceptance;
+  const admitProbability = Math.max(2, Math.min(95, intl * gpaMultiplier(gpaGap)));
+
+  // Surface acceptance-rate context as a strength or limitation.
+  if (intl >= 70) {
+    strengths.push(`Highly accessible — ${intl.toFixed(0)}% of international applicants are admitted here.`);
+  } else if (intl >= 40 && intl < 70) {
+    strengths.push(`Moderate selectivity — about ${intl.toFixed(0)}% of international applicants get in.`);
+  } else if (intl < 15) {
+    limitations.push(`Very selective: only ${intl.toFixed(1)}% of international applicants are admitted.`);
+  } else if (intl < 25) {
+    limitations.push(`Selective for international applicants (${intl.toFixed(1)}% admit rate).`);
+  }
+
+  // Verdict from admit probability, not raw fit.
   let verdict: Verdict;
-  if (intl < 8 || fit < 38) verdict = "Reach";
-  // Schools accepting < 20 % of internationals are always a Reach.
-  else if (intl < 20) verdict = "Reach";
-  // Moderately selective: only Target unless very high fit.
-  else if (intl < 35) verdict = fit >= 78 ? "Likely" : fit >= 55 ? "Target" : "Reach";
-  // Open schools: Likely at reasonable fit.
-  else if (intl >= 50 && fit >= 58) verdict = "Likely";
-  else if (intl >= 35 && fit >= 68) verdict = "Likely";
-  else verdict = "Target";
+  if (admitProbability >= 55) verdict = "Likely";
+  else if (admitProbability >= 22) verdict = "Target";
+  else verdict = "Reach";
 
   return {
     school,
     fit: Math.round(fit),
+    admitProbability: Math.round(admitProbability),
     verdict,
-    reasons: reasons.slice(0, 5),
+    strengths: strengths.slice(0, 6),
+    limitations: limitations.slice(0, 6),
     netCost: school.netCostUsd,
   };
 }
@@ -207,27 +230,40 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
 export const RECOMMENDATION_CAP = 150;
 export const LIKELY_FLOOR = 3;
 
-export function recommendSchools(profile: Profile): { matches: SchoolMatch[]; floorApplied: boolean } {
+// Below this normalized GPA, the student sits under most school medians and
+// deserves a visible disclaimer about the realism of the matching.
+const LOW_GPA_THRESHOLD = 3.35;
+
+export function recommendSchools(profile: Profile): {
+  matches: SchoolMatch[];
+  floorApplied: boolean;
+  lowGpa: boolean;
+} {
   const ranked = SCHOOLS
     .map((s) => scoreSchool(profile, s))
     .sort((a, b) => b.fit - a.fit)
     .slice(0, RECOMMENDATION_CAP);
 
+  const studentGpa = normalizeGpa(profile.gpa, profile.system);
+  const lowGpa = studentGpa < LOW_GPA_THRESHOLD;
   const likelyCount = ranked.filter((m) => m.verdict === "Likely").length;
   let floorApplied = false;
 
   if (likelyCount < LIKELY_FLOOR) {
     floorApplied = true;
-    // Promote the most accessible schools regardless of GPA comparison —
-    // a student below every school's median still deserves realistic safeties.
     const promotable = ranked
       .filter((m) => m.verdict !== "Likely" && m.school.intlAcceptance >= 40)
-      .sort((a, b) => b.school.intlAcceptance - a.school.intlAcceptance);
+      .sort((a, b) => {
+        const gapA = a.school.median.gpa - studentGpa;
+        const gapB = b.school.median.gpa - studentGpa;
+        if (Math.abs(gapA - gapB) > 0.05) return gapA - gapB;
+        return b.school.intlAcceptance - a.school.intlAcceptance;
+      });
     const needed = LIKELY_FLOOR - likelyCount;
     for (const m of promotable.slice(0, needed)) m.verdict = "Likely";
   }
 
-  return { matches: ranked, floorApplied };
+  return { matches: ranked, floorApplied, lowGpa };
 }
 
 export type MajorMatch = {

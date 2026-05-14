@@ -26,8 +26,8 @@ export default function Matches() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
 
-  const { matches, floorApplied } = useMemo(
-    () => profile ? recommendSchools(profile) : { matches: [], floorApplied: false },
+  const { matches, lowGpa } = useMemo(
+    () => profile ? recommendSchools(profile) : { matches: [], floorApplied: false, lowGpa: false },
     [profile]
   );
   const distribution = useMemo(() => distributionFor(matches), [matches]);
@@ -62,11 +62,11 @@ export default function Matches() {
       </div>
 
       {/* Low-GPA disclaimer */}
-      {floorApplied && (
+      {lowGpa && (
         <div className="mb-8 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-[13.5px] leading-relaxed text-amber-900 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-300">
           <Info size={16} weight="duotone" className="mt-0.5 shrink-0" />
           <span>
-            Your grades are below the median admit profile at most indexed schools. Meridian guarantees a minimum of {LIKELY_FLOOR} Likely matches — treat these as your foundation and build your list from there.
+            Your grades sit below the median admit profile at most schools in our index. Your odds (shown on each expanded school) factor in both the school's acceptance rate and how far your GPA is from their median. Meridian guarantees a minimum of {LIKELY_FLOOR} Likely matches — treat these as your foundation and build your list from there.
           </span>
         </div>
       )}
@@ -155,16 +155,30 @@ export default function Matches() {
                       <div className="grid grid-cols-1 gap-8 border-t border-ink-200/70 bg-ink-50/40 px-7 py-7 md:grid-cols-12 dark:border-ink-800/70 dark:bg-ink-950/40">
                         <div className="md:col-span-7">
                           <p className="text-[15px] leading-relaxed text-ink-700 dark:text-ink-300 whitespace-pre-line">{m.school.blurb}</p>
-                          <div className="mt-6">
-                            <div className="text-[10px] font-mono uppercase tracking-widest text-ink-500">{m.verdict === "Reach" && m.fit < 50 ? "Why this is a stretch" : "Why this fits you"}</div>
-                            <ul className="mt-3 space-y-2">
-                              {m.reasons.map((r, idx) => (
-                                <li key={idx} className="flex items-start gap-2.5 text-[14px] text-ink-700 dark:text-ink-300">
-                                  <Info size={14} weight="duotone" className="mt-0.5 shrink-0 text-accent" />{r}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                          {m.strengths.length > 0 && (
+                            <div className="mt-6">
+                              <div className="text-[10px] font-mono uppercase tracking-widest text-ink-500">Why this fits you</div>
+                              <ul className="mt-3 space-y-2">
+                                {m.strengths.map((r, idx) => (
+                                  <li key={idx} className="flex items-start gap-2.5 text-[14px] text-ink-700 dark:text-ink-300">
+                                    <Info size={14} weight="duotone" className="mt-0.5 shrink-0 text-accent" />{r}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {m.limitations.length > 0 && (
+                            <div className="mt-6">
+                              <div className="text-[10px] font-mono uppercase tracking-widest text-amber-700 dark:text-amber-400">Limitations to consider</div>
+                              <ul className="mt-3 space-y-2">
+                                {m.limitations.map((r, idx) => (
+                                  <li key={idx} className="flex items-start gap-2.5 text-[14px] text-ink-700 dark:text-ink-300">
+                                    <Info size={14} weight="duotone" className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500" />{r}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                           {m.school.website && (
                             <a
                               href={`https://www.${m.school.website}`}
@@ -177,6 +191,8 @@ export default function Matches() {
                           )}
                         </div>
                         <div className="md:col-span-5 grid grid-cols-2 gap-x-6 gap-y-5">
+                          <Stat label="Your odds (est.)" value={`${m.admitProbability}%`} highlight />
+                          <Stat label="Fit score" value={`${m.fit}`} />
                           <Stat label="Intl admit" value={`${m.school.intlAcceptance.toFixed(1)}%`} />
                           <Stat label="Overall admit" value={`${m.school.acceptance.toFixed(1)}%`} />
                           <Stat label="Median GPA (US)" value={m.school.median.gpa.toFixed(2)} />
