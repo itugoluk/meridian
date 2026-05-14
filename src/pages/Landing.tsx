@@ -8,6 +8,7 @@ import { MarketingNav } from "../components/MarketingNav";
 import { Footer } from "../components/Footer";
 import { MarqueeRow } from "../components/MarqueeRow";
 import { HeroPanel } from "../components/HeroPanel";
+import { SCHOOLS } from "../data/schools";
 
 export default function Landing() {
   return (
@@ -68,7 +69,7 @@ export default function Landing() {
 
             {/* Inline stats — no boxes */}
             <div className="mt-14 grid grid-cols-3 gap-y-4 border-t border-ink-200/70 pt-7 dark:border-ink-800/70">
-              <Stat n="208" label="Schools indexed" />
+              <Stat n={String(SCHOOLS.length)} label="Schools indexed" />
               <Stat n="6" label="School systems" />
               <Stat n="27" label="Countries" />
             </div>
@@ -108,7 +109,7 @@ export default function Landing() {
             icon={SquaresFour}
             kicker="Core"
             title="College Match"
-            description="Weighted recommendations across 208 universities in 27 countries. Reach / Target / Likely tiering, transparent reasoning, and a portfolio-balance audit. Free for the first three matches."
+            description={`Weighted recommendations across ${SCHOOLS.length} universities in 27 countries. Reach / Target / Likely tiering, transparent reasoning, and a portfolio-balance audit. Free for the first three matches.`}
           >
             <MatchPreview />
           </FeatureCard>
