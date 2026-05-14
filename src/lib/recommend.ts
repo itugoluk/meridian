@@ -182,13 +182,18 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
 
   fit = Math.max(2, Math.min(98, fit));
 
-  // Verdict — combine school selectivity with fit
+  // Verdict — gates on selectivity first, then fit.
   const intl = school.intlAcceptance;
   let verdict: Verdict;
   if (intl < 8 || fit < 38) verdict = "Reach";
-  else if (intl < 20 && fit < 70) verdict = "Reach";
-  else if (intl < 30 || fit < 78) verdict = "Target";
-  else verdict = "Likely";
+  // Schools accepting < 20 % of internationals are always a Reach.
+  else if (intl < 20) verdict = "Reach";
+  // Moderately selective: only Target unless very high fit.
+  else if (intl < 35) verdict = fit >= 78 ? "Likely" : fit >= 55 ? "Target" : "Reach";
+  // Open schools: Likely at reasonable fit.
+  else if (intl >= 50 && fit >= 58) verdict = "Likely";
+  else if (intl >= 35 && fit >= 68) verdict = "Likely";
+  else verdict = "Target";
 
   return {
     school,
@@ -213,14 +218,11 @@ export function recommendSchools(profile: Profile): { matches: SchoolMatch[]; fl
 
   if (likelyCount < LIKELY_FLOOR) {
     floorApplied = true;
-    const studentGpa = normalizeGpa(profile.gpa, profile.system);
+    // Promote the most accessible schools regardless of GPA comparison —
+    // a student below every school's median still deserves realistic safeties.
     const promotable = ranked
-      .filter((m) => m.verdict !== "Likely" && studentGpa >= m.school.median.gpa)
-      .sort((a, b) => {
-        const accDelta = b.school.intlAcceptance - a.school.intlAcceptance;
-        if (Math.abs(accDelta) > 0.5) return accDelta;
-        return a.school.median.gpa - b.school.median.gpa;
-      });
+      .filter((m) => m.verdict !== "Likely" && m.school.intlAcceptance >= 40)
+      .sort((a, b) => b.school.intlAcceptance - a.school.intlAcceptance);
     const needed = LIKELY_FLOOR - likelyCount;
     for (const m of promotable.slice(0, needed)) m.verdict = "Likely";
   }
