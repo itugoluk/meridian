@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -8,11 +8,21 @@ import {
 import { useStore } from "../store/useStore";
 import { recommendSchools, recommendMajors, distributionFor, formatUsd } from "../lib/recommend";
 import { buildTimeline } from "../lib/timeline";
+import { Tutorial } from "../components/Tutorial";
 
 export default function Dashboard() {
   const profile = useStore((s) => s.profile);
   const isPro = useStore((s) => s.isPro);
   const essays = useStore((s) => s.essays);
+  const tutorialSeen = useStore((s) => s.tutorialSeen);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (profile && !tutorialSeen) {
+      const t = setTimeout(() => setTutorialOpen(true), 400);
+      return () => clearTimeout(t);
+    }
+  }, [profile, tutorialSeen]);
 
   const matches = useMemo(() => (profile ? recommendSchools(profile) : []), [profile]);
   const majors = useMemo(() => (profile ? recommendMajors(profile) : []), [profile]);
@@ -37,6 +47,7 @@ export default function Dashboard() {
 
   return (
     <div className="px-6 py-10 lg:px-12 lg:py-14 max-w-[1400px] mx-auto pb-32 lg:pb-14">
+      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
       {/* Header */}
       <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
         <div>

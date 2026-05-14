@@ -42,6 +42,7 @@ type State = {
   essays: EssayDraft[];
   applications: Application[];
   theme: "light" | "dark";
+  tutorialSeen: boolean;
 
   setProfile: (p: Profile) => void;
   patchProfile: (p: Partial<Profile>) => void;
@@ -54,6 +55,7 @@ type State = {
   upsertApplication: (a: Application) => void;
   removeApplication: (id: string) => void;
   setTheme: (t: "light" | "dark") => void;
+  setTutorialSeen: (v: boolean) => void;
   reset: () => void;
 };
 
@@ -69,6 +71,7 @@ export const useStore = create<State>()(
       essays: [],
       applications: [],
       theme: (typeof window !== "undefined" && localStorage.getItem("meridian-theme") === "dark") ? "dark" : "light",
+      tutorialSeen: false,
 
       setProfile: (p) => set({ profile: p }),
       patchProfile: (p) => set((s) => ({ profile: s.profile ? { ...s.profile, ...p } : null })),
@@ -101,6 +104,7 @@ export const useStore = create<State>()(
         } catch {}
         set({ theme: t });
       },
+      setTutorialSeen: (v) => set({ tutorialSeen: v }),
       reset: () =>
         set({
           isPro: false,
@@ -118,6 +122,7 @@ export const useStore = create<State>()(
         savedSchoolIds: s.savedSchoolIds,
         essays: s.essays,
         applications: s.applications,
+        tutorialSeen: s.tutorialSeen,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;

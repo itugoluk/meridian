@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { SignOut, Sparkle, Warning } from "@phosphor-icons/react";
+import { Compass, SignOut, Sparkle, Warning } from "@phosphor-icons/react";
 import { useStore } from "../store/useStore";
 import { useAuth, useCurrentAccount } from "../store/useAuth";
 
@@ -9,6 +9,7 @@ export default function Profile() {
   const isPro = useStore((s) => s.isPro);
   const reset = useStore((s) => s.reset);
   const downgrade = useStore((s) => s.downgrade);
+  const setTutorialSeen = useStore((s) => s.setTutorialSeen);
   const account = useCurrentAccount();
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
@@ -64,6 +65,12 @@ export default function Profile() {
         <Link to="/onboarding" className="inline-flex h-11 items-center rounded-full bg-ink-950 px-5 text-[14px] font-medium text-white dark:bg-white dark:text-ink-950">
           Re-run onboarding
         </Link>
+        <button
+          onClick={() => { setTutorialSeen(false); navigate("/app"); }}
+          className="inline-flex h-11 items-center gap-1.5 rounded-full border border-ink-200 px-5 text-[14px] font-medium dark:border-ink-800"
+        >
+          <Compass size={14} weight="duotone" /> Replay tour
+        </button>
         {isPro && (
           <button onClick={downgrade} className="inline-flex h-11 items-center rounded-full border border-ink-200 px-5 text-[14px] font-medium dark:border-ink-800">
             Downgrade to Free
