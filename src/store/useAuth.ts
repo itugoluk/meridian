@@ -12,6 +12,7 @@ export type AccountData = {
   savedSchoolIds: string[];
   essays: EssayDraft[];
   applications: Application[];
+  tutorialSeen: boolean;
 };
 
 type AuthState = {
@@ -59,6 +60,7 @@ export const useAuth = create<AuthState>()(
           savedSchoolIds: [],
           essays: [],
           applications: [],
+          tutorialSeen: false,
         };
         set((s) => ({
           accounts: { ...s.accounts, [key]: account },

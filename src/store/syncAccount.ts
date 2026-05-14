@@ -20,6 +20,7 @@ export function useAccountSync() {
           savedSchoolIds: account.savedSchoolIds,
           essays: account.essays,
           applications: account.applications,
+          tutorialSeen: account.tutorialSeen ?? false,
         });
       }
     } else {
@@ -29,6 +30,7 @@ export function useAccountSync() {
         savedSchoolIds: [],
         essays: [],
         applications: [],
+        tutorialSeen: false,
       });
     }
   }, [currentEmail]);
@@ -45,6 +47,7 @@ export function useAccountSync() {
         savedSchoolIds: state.savedSchoolIds,
         essays: state.essays,
         applications: state.applications,
+        tutorialSeen: state.tutorialSeen,
       });
     });
   }, []);

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight, Calendar, Compass, GraduationCap, PaperPlaneTilt,
-  SquaresFour, X, House,
+  ArrowLeft, ArrowRight, Calendar, Compass, GraduationCap, PaperPlaneTilt,
+  SquaresFour, House,
 } from "@phosphor-icons/react";
 import { useStore } from "../store/useStore";
 
@@ -42,18 +42,24 @@ const STEPS: Step[] = [
 
 export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [i, setI] = useState(0);
+  const [dir, setDir] = useState(1);
   const setTutorialSeen = useStore((s) => s.setTutorialSeen);
 
   useEffect(() => {
-    if (open) setI(0);
+    if (open) { setI(0); setDir(1); }
   }, [open]);
+
+  function goTo(next: number) {
+    setDir(next > i ? 1 : -1);
+    setI(next);
+  }
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
       if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft") setI((x) => Math.max(0, x - 1));
+      if (e.key === "ArrowLeft" && i > 0) goTo(i - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -65,7 +71,7 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
     onClose();
   }
   function next() {
-    if (i < STEPS.length - 1) setI(i + 1);
+    if (i < STEPS.length - 1) goTo(i + 1);
     else close();
   }
 
@@ -85,7 +91,6 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
           onClick={close}
         >
           <motion.div
-            key={i}
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -93,44 +98,48 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-soft dark:border-ink-800/70 dark:bg-ink-900"
           >
-            <button
-              onClick={close}
-              aria-label="Close tutorial"
-              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-950 dark:hover:bg-ink-800 dark:hover:text-white"
-            >
-              <X size={14} weight="bold" />
-            </button>
+            <div className="relative overflow-hidden min-h-[360px]">
+              <AnimatePresence initial={false} custom={dir} mode="wait">
+                <motion.div
+                  key={i}
+                  custom={dir}
+                  initial={{ opacity: 0, x: dir * 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: dir * -24 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="px-8 pt-9 pb-7"
+                >
+                  <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-accent-soft/60 text-accent dark:bg-accent/15">
+                    <Icon size={22} weight="duotone" />
+                  </div>
+                  <div className="text-[11px] font-mono uppercase tracking-widest text-accent">{step.kicker}</div>
+                  <h2 className="font-display mt-2 text-[26px] font-bold leading-tight tracking-extra-tight text-ink-950 dark:text-white">
+                    {step.title}
+                  </h2>
+                  <p className="mt-3 text-[14.5px] leading-relaxed text-ink-600 dark:text-ink-400">
+                    {step.body}
+                  </p>
 
-            <div className="px-8 pt-9 pb-7">
-              <div className="mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-accent-soft/60 text-accent dark:bg-accent/15">
-                <Icon size={22} weight="duotone" />
-              </div>
-              <div className="text-[11px] font-mono uppercase tracking-widest text-accent">{step.kicker}</div>
-              <h2 className="font-display mt-2 text-[26px] font-bold leading-tight tracking-extra-tight text-ink-950 dark:text-white">
-                {step.title}
-              </h2>
-              <p className="mt-3 text-[14.5px] leading-relaxed text-ink-600 dark:text-ink-400">
-                {step.body}
-              </p>
-
-              {i === 1 && (
-                <div className="mt-5 grid grid-cols-2 gap-2.5">
-                  <Tile icon={SquaresFour} label="College Match" hint="Ranked fit list" />
-                  <Tile icon={House} label="Overview" hint="Daily snapshot" />
-                </div>
-              )}
-              {i === 2 && (
-                <div className="mt-5 grid grid-cols-2 gap-2.5">
-                  <Tile icon={Compass} label="Majors" hint="Fit + salary" />
-                  <Tile icon={Calendar} label="Timeline" hint="Quarterly plan" />
-                </div>
-              )}
-              {i === 3 && (
-                <div className="mt-5 grid grid-cols-2 gap-2.5">
-                  <Tile icon={PaperPlaneTilt} label="Essays" hint="Brainstorm → draft" />
-                  <Tile icon={GraduationCap} label="Counselors" hint="Pro: book a session" />
-                </div>
-              )}
+                  {i === 1 && (
+                    <div className="mt-5 grid grid-cols-2 gap-2.5">
+                      <Tile icon={SquaresFour} label="College Match" hint="Ranked fit list" />
+                      <Tile icon={House} label="Overview" hint="Daily snapshot" />
+                    </div>
+                  )}
+                  {i === 2 && (
+                    <div className="mt-5 grid grid-cols-2 gap-2.5">
+                      <Tile icon={Compass} label="Majors" hint="Fit + salary" />
+                      <Tile icon={Calendar} label="Timeline" hint="Quarterly plan" />
+                    </div>
+                  )}
+                  {i === 3 && (
+                    <div className="mt-5 grid grid-cols-2 gap-2.5">
+                      <Tile icon={PaperPlaneTilt} label="Essays" hint="Brainstorm → draft" />
+                      <Tile icon={GraduationCap} label="Counselors" hint="Pro: book a session" />
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             <div className="flex items-center justify-between border-t border-ink-200/70 bg-ink-50/60 px-6 py-4 dark:border-ink-800/70 dark:bg-ink-950/40">
@@ -138,7 +147,7 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
                 {STEPS.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setI(idx)}
+                    onClick={() => goTo(idx)}
                     aria-label={`Go to step ${idx + 1}`}
                     className={`h-1.5 rounded-full transition-all ${
                       idx === i ? "w-6 bg-ink-950 dark:bg-white" : "w-1.5 bg-ink-300 dark:bg-ink-700"
@@ -147,6 +156,14 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
                 ))}
               </div>
               <div className="flex items-center gap-2">
+                {i > 0 && (
+                  <button
+                    onClick={() => goTo(i - 1)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-ink-200 px-3.5 text-[13px] font-medium text-ink-700 hover:bg-ink-50 dark:border-ink-800 dark:text-ink-300 dark:hover:bg-ink-800/60"
+                  >
+                    <ArrowLeft size={13} weight="bold" /> Back
+                  </button>
+                )}
                 {!isLast && (
                   <button
                     onClick={close}
