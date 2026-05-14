@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, BookmarkSimple, CaretLeft, CaretRight, Funnel, Info, Lock } from "@phosphor-icons/react";
 import { useStore } from "../store/useStore";
-import { recommendSchools, formatUsd, type Verdict, distributionFor, RECOMMENDATION_CAP } from "../lib/recommend";
+import { recommendSchools, formatUsd, type Verdict, distributionFor, RECOMMENDATION_CAP, LIKELY_FLOOR } from "../lib/recommend";
 import { SchoolLogo } from "../components/SchoolLogo";
 
 const VERDICTS: Verdict[] = ["Reach", "Target", "Likely"];
@@ -26,7 +26,10 @@ export default function Matches() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
 
-  const matches = useMemo(() => (profile ? recommendSchools(profile) : []), [profile]);
+  const { matches, floorApplied } = useMemo(
+    () => profile ? recommendSchools(profile) : { matches: [], floorApplied: false },
+    [profile]
+  );
   const distribution = useMemo(() => distributionFor(matches), [matches]);
 
   const filtered = matches.filter((m) => filter === "All" || m.verdict === filter);
@@ -57,6 +60,16 @@ export default function Matches() {
           <span>{distribution.reach} R · {distribution.target} T · {distribution.likely} L</span>
         </div>
       </div>
+
+      {/* Low-GPA disclaimer */}
+      {floorApplied && (
+        <div className="mb-8 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-[13.5px] leading-relaxed text-amber-900 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-300">
+          <Info size={16} weight="duotone" className="mt-0.5 shrink-0" />
+          <span>
+            Your grades are below the median admit profile at most indexed schools. Meridian guarantees a minimum of {LIKELY_FLOOR} Likely matches — treat these as your foundation and build your list from there.
+          </span>
+        </div>
+      )}
 
       {/* Filter */}
       <div className="mb-8 inline-flex gap-1 rounded-full border border-ink-200 bg-ink-50 p-1 dark:border-ink-800 dark:bg-ink-900">

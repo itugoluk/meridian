@@ -47,7 +47,7 @@ const GPA_BY_SYSTEM: Record<Profile["system"], (val: number) => number> = {
   },
 };
 
-function normalizeGpa(gpa: number, system: Profile["system"]): number {
+export function normalizeGpa(gpa: number, system: Profile["system"]): number {
   const fn = GPA_BY_SYSTEM[system] ?? GPA_BY_SYSTEM.American;
   return Math.max(0, Math.min(4.0, fn(gpa)));
 }
@@ -116,12 +116,15 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
   } else if (gpaDelta >= -0.1) {
     fit += 8;
     reasons.push(`Your grades are within the typical admit range.`);
-  } else if (gpaDelta >= -0.25) {
-    fit -= 6;
-    reasons.push(`Grades slightly below median — strong essays will matter.`);
   } else {
-    fit -= 18;
-    reasons.push(`Grades are well below the median; treat this as a reach.`);
+    // Smooth gradient: -6 at delta=-0.1, steepening to -22 at delta≈-0.8
+    const penalty = Math.max(-22, -6 + gpaDelta * 20);
+    fit += penalty;
+    if (gpaDelta >= -0.3) {
+      reasons.push(`Grades slightly below median — strong essays will matter.`);
+    } else {
+      reasons.push(`Grades are well below the median; treat this as a reach.`);
+    }
   }
 
   // 2. Country alignment (max +15)
@@ -197,24 +200,23 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
 }
 
 export const RECOMMENDATION_CAP = 150;
-const LIKELY_FLOOR = 5;
+export const LIKELY_FLOOR = 3;
 
-export function recommendSchools(profile: Profile): SchoolMatch[] {
+export function recommendSchools(profile: Profile): { matches: SchoolMatch[]; floorApplied: boolean } {
   const ranked = SCHOOLS
     .map((s) => scoreSchool(profile, s))
     .sort((a, b) => b.fit - a.fit)
     .slice(0, RECOMMENDATION_CAP);
 
-  // Guarantee a Likely floor so every student sees realistic safeties.
-  // Promote the most accessible schools (highest intl acceptance, lowest GPA
-  // gap) where the student is at or above the median admit profile.
   const likelyCount = ranked.filter((m) => m.verdict === "Likely").length;
+  let floorApplied = false;
+
   if (likelyCount < LIKELY_FLOOR) {
+    floorApplied = true;
     const studentGpa = normalizeGpa(profile.gpa, profile.system);
     const promotable = ranked
-      .filter((m) => m.verdict !== "Likely" && studentGpa >= m.school.median.gpa - 0.1)
+      .filter((m) => m.verdict !== "Likely" && studentGpa >= m.school.median.gpa)
       .sort((a, b) => {
-        // Most accessible first: higher intl acceptance, then larger GPA cushion.
         const accDelta = b.school.intlAcceptance - a.school.intlAcceptance;
         if (Math.abs(accDelta) > 0.5) return accDelta;
         return a.school.median.gpa - b.school.median.gpa;
@@ -223,7 +225,7 @@ export function recommendSchools(profile: Profile): SchoolMatch[] {
     for (const m of promotable.slice(0, needed)) m.verdict = "Likely";
   }
 
-  return ranked;
+  return { matches: ranked, floorApplied };
 }
 
 export type MajorMatch = {
