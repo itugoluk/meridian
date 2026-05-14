@@ -197,12 +197,33 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
 }
 
 export const RECOMMENDATION_CAP = 150;
+const LIKELY_FLOOR = 5;
 
 export function recommendSchools(profile: Profile): SchoolMatch[] {
-  return SCHOOLS
+  const ranked = SCHOOLS
     .map((s) => scoreSchool(profile, s))
     .sort((a, b) => b.fit - a.fit)
     .slice(0, RECOMMENDATION_CAP);
+
+  // Guarantee a Likely floor so every student sees realistic safeties.
+  // Promote the most accessible schools (highest intl acceptance, lowest GPA
+  // gap) where the student is at or above the median admit profile.
+  const likelyCount = ranked.filter((m) => m.verdict === "Likely").length;
+  if (likelyCount < LIKELY_FLOOR) {
+    const studentGpa = normalizeGpa(profile.gpa, profile.system);
+    const promotable = ranked
+      .filter((m) => m.verdict !== "Likely" && studentGpa >= m.school.median.gpa - 0.1)
+      .sort((a, b) => {
+        // Most accessible first: higher intl acceptance, then larger GPA cushion.
+        const accDelta = b.school.intlAcceptance - a.school.intlAcceptance;
+        if (Math.abs(accDelta) > 0.5) return accDelta;
+        return a.school.median.gpa - b.school.median.gpa;
+      });
+    const needed = LIKELY_FLOOR - likelyCount;
+    for (const m of promotable.slice(0, needed)) m.verdict = "Likely";
+  }
+
+  return ranked;
 }
 
 export type MajorMatch = {
