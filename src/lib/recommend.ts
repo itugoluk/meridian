@@ -16,27 +16,30 @@ export type SchoolMatch = {
 
 // Model the student's position in the school's admit pool and translate it
 // into a personal admit probability. `gpaGap` > 0 = student sits below median.
-// Above median: boost toward (1 - r) of the remaining headroom.
-// Below median: scale the school's rate down toward zero.
+// Above median: boost toward (1 - r) of the remaining headroom, with a small
+// at-median lift to acknowledge that median-fit candidates outperform the
+// average applicant pool. Below median: gentle multiplicative penalty that
+// preserves real odds at accessible schools.
 function estimateAdmitProbability(intlAcceptance: number, gpaGap: number): number {
   const r = Math.max(0.01, Math.min(0.99, intlAcceptance / 100));
 
   if (gpaGap <= 0) {
-    // Above median (or exactly at it). Reward distance above admit median.
-    const aboveness = -gpaGap;                   // 0 at median, 0.5+ for high achievers
-    const boost = Math.min(0.9, aboveness * 2.5); // 0..0.9
+    const aboveness = -gpaGap;                            // 0 at median, 0.5+ for high achievers
+    const boost = Math.min(0.92, aboveness * 3.0 + 0.05); // +5 pt floor for at-median
     const adjusted = r + (1 - r) * boost;
     return Math.max(2, Math.min(95, adjusted * 100));
   }
 
-  // Below median: discrete tiers, smoothly stepped.
+  // Below median — gentler than before, especially for the 0.1–0.3 band where
+  // the student is competitive at high-acceptance schools.
   let mult: number;
-  if (gpaGap <= 0.15) mult = 0.85;
-  else if (gpaGap <= 0.3) mult = 0.65;
-  else if (gpaGap <= 0.5) mult = 0.4;
-  else if (gpaGap <= 0.7) mult = 0.22;
-  else if (gpaGap <= 0.9) mult = 0.12;
-  else mult = 0.07;
+  if (gpaGap <= 0.1) mult = 0.92;
+  else if (gpaGap <= 0.2) mult = 0.82;
+  else if (gpaGap <= 0.3) mult = 0.7;
+  else if (gpaGap <= 0.45) mult = 0.55;
+  else if (gpaGap <= 0.6) mult = 0.4;
+  else if (gpaGap <= 0.8) mult = 0.22;
+  else mult = 0.1;
 
   return Math.max(2, Math.min(95, r * 100 * mult));
 }
