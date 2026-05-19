@@ -15,6 +15,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Matches = lazy(() => import("./pages/Matches"));
+const Portfolio = lazy(() => import("./pages/Portfolio"));
 const Majors = lazy(() => import("./pages/Majors"));
 const Timeline = lazy(() => import("./pages/Timeline"));
 const Essays = lazy(() => import("./pages/Essays"));
@@ -64,6 +65,7 @@ function AppRoot() {
           <Route path="/app" element={<RequireAuth><AppShell /></RequireAuth>}>
             <Route index element={<Dashboard />} />
             <Route path="matches" element={<Matches />} />
+            <Route path="portfolio" element={<Portfolio />} />
             <Route path="majors" element={<Majors />} />
             <Route path="timeline" element={<Timeline />} />
             <Route path="essays" element={<Essays />} />

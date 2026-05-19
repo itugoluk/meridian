@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, BookmarkSimple, CaretLeft, CaretRight, Funnel, Info, Lock } from "@phosphor-icons/react";
+import { ArrowUpRight, BookmarkSimple, CaretLeft, CaretRight, Funnel, Info, Lock, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { useStore } from "../store/useStore";
 import { recommendSchools, formatUsd, type Verdict, distributionFor, RECOMMENDATION_CAP, LIKELY_FLOOR } from "../lib/recommend";
 import { SchoolLogo } from "../components/SchoolLogo";
@@ -25,6 +25,7 @@ export default function Matches() {
   const [filter, setFilter] = useState<"All" | Verdict>("All");
   const [openId, setOpenId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState("");
 
   const { matches, lowGpa } = useMemo(
     () => profile ? recommendSchools(profile) : { matches: [], floorApplied: false, lowGpa: false },
@@ -32,9 +33,15 @@ export default function Matches() {
   );
   const distribution = useMemo(() => distributionFor(matches), [matches]);
 
-  const filtered = matches.filter((m) => filter === "All" || m.verdict === filter);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = matches.filter((m) => {
+    if (filter !== "All" && m.verdict !== filter) return false;
+    if (!normalizedQuery) return true;
+    const haystack = `${m.school.name} ${m.school.acronym ?? ""} ${m.school.city} ${m.school.country}`.toLowerCase();
+    return haystack.includes(normalizedQuery);
+  });
 
-  useEffect(() => { setPage(0); }, [filter, isPro]);
+  useEffect(() => { setPage(0); }, [filter, isPro, query]);
 
   const pageCount = isPro ? Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)) : 1;
   const safePage = Math.min(page, pageCount - 1);
@@ -71,19 +78,41 @@ export default function Matches() {
         </div>
       )}
 
-      {/* Filter */}
-      <div className="mb-8 inline-flex gap-1 rounded-full border border-ink-200 bg-ink-50 p-1 dark:border-ink-800 dark:bg-ink-900">
-        {["All", ...VERDICTS].map((v) => (
-          <button
-            key={v}
-            onClick={() => setFilter(v as "All" | Verdict)}
-            className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors ${
-              filter === v ? "bg-ink-950 text-white dark:bg-white dark:text-ink-950" : "text-ink-600 hover:text-ink-950 dark:text-ink-400 dark:hover:text-white"
-            }`}
-          >
-            {v}
-          </button>
-        ))}
+      {/* Search + Filter */}
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-sm">
+          <MagnifyingGlass size={16} weight="bold" className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, city, or country"
+            className="h-11 w-full rounded-full border border-ink-200 bg-white pl-11 pr-10 text-[14px] placeholder:text-ink-400 focus:border-ink-400 focus:outline-none focus:ring-0 dark:border-ink-800 dark:bg-ink-900"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full text-ink-400 hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800"
+            >
+              <X size={12} weight="bold" />
+            </button>
+          )}
+        </div>
+
+        <div className="inline-flex gap-1 rounded-full border border-ink-200 bg-ink-50 p-1 dark:border-ink-800 dark:bg-ink-900">
+          {["All", ...VERDICTS].map((v) => (
+            <button
+              key={v}
+              onClick={() => setFilter(v as "All" | Verdict)}
+              className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors ${
+                filter === v ? "bg-ink-950 text-white dark:bg-white dark:text-ink-950" : "text-ink-600 hover:text-ink-950 dark:text-ink-400 dark:hover:text-white"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Results — divided list, no card spam */}

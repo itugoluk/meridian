@@ -14,16 +14,31 @@ export type SchoolMatch = {
   netCost: number;
 };
 
-// Multiplier on raw intl-acceptance rate based on how far the student sits
-// from the school's median admit GPA. Positive gap = student is below median.
-function gpaMultiplier(gpaGap: number): number {
-  if (gpaGap <= -0.3) return 1.4;
-  if (gpaGap <= 0) return 1.1 + (-gpaGap / 0.3) * 0.3;
-  if (gpaGap <= 0.2) return 1.1 - (gpaGap / 0.2) * 0.25;
-  if (gpaGap <= 0.4) return 0.85 - ((gpaGap - 0.2) / 0.2) * 0.35;
-  if (gpaGap <= 0.6) return 0.5 - ((gpaGap - 0.4) / 0.2) * 0.25;
-  if (gpaGap <= 0.8) return 0.25 - ((gpaGap - 0.6) / 0.2) * 0.15;
-  return 0.1;
+// Model the student's position in the school's admit pool and translate it
+// into a personal admit probability. `gpaGap` > 0 = student sits below median.
+// Above median: boost toward (1 - r) of the remaining headroom.
+// Below median: scale the school's rate down toward zero.
+function estimateAdmitProbability(intlAcceptance: number, gpaGap: number): number {
+  const r = Math.max(0.01, Math.min(0.99, intlAcceptance / 100));
+
+  if (gpaGap <= 0) {
+    // Above median (or exactly at it). Reward distance above admit median.
+    const aboveness = -gpaGap;                   // 0 at median, 0.5+ for high achievers
+    const boost = Math.min(0.9, aboveness * 2.5); // 0..0.9
+    const adjusted = r + (1 - r) * boost;
+    return Math.max(2, Math.min(95, adjusted * 100));
+  }
+
+  // Below median: discrete tiers, smoothly stepped.
+  let mult: number;
+  if (gpaGap <= 0.15) mult = 0.85;
+  else if (gpaGap <= 0.3) mult = 0.65;
+  else if (gpaGap <= 0.5) mult = 0.4;
+  else if (gpaGap <= 0.7) mult = 0.22;
+  else if (gpaGap <= 0.9) mult = 0.12;
+  else mult = 0.07;
+
+  return Math.max(2, Math.min(95, r * 100 * mult));
 }
 
 const GPA_BY_SYSTEM: Record<Profile["system"], (val: number) => number> = {
@@ -64,6 +79,22 @@ const GPA_BY_SYSTEM: Record<Profile["system"], (val: number) => number> = {
 export function normalizeGpa(gpa: number, system: Profile["system"]): number {
   const fn = GPA_BY_SYSTEM[system] ?? GPA_BY_SYSTEM.American;
   return Math.max(0, Math.min(4.0, fn(gpa)));
+}
+
+// Rough ACT → SAT concordance (College Board 2018 tables).
+function actToSat(act: number): number {
+  if (act >= 36) return 1590;
+  if (act >= 33) return 1460 + (act - 33) * 43;
+  if (act >= 28) return 1310 + (act - 28) * 30;
+  if (act >= 22) return 1110 + (act - 22) * 33;
+  if (act >= 18) return 950 + (act - 18) * 40;
+  return Math.max(400, 600 + (act - 12) * 60);
+}
+
+function effectiveStudentSat(profile: Profile): number | null {
+  if (profile.satScore && profile.satScore >= 400) return profile.satScore;
+  if (profile.actScore && profile.actScore >= 1) return actToSat(profile.actScore);
+  return null;
 }
 
 // Map shorthand interest tags to keywords that appear in school strength names
@@ -124,6 +155,14 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
 
   const studentGpa = normalizeGpa(profile.gpa, profile.system);
   const gpaGap = school.median.gpa - studentGpa;
+
+  // Test score — blended with GPA gap so a strong SAT can partially offset a
+  // weaker GPA (and vice versa). Skipped for test-blind schools or applicants
+  // without scores.
+  const studentSat = effectiveStudentSat(profile);
+  const testRelevant = studentSat !== null && school.testPolicy !== "Blind" && school.testPolicy !== "Not used";
+  const satGap = testRelevant ? (school.median.sat - studentSat!) / 800 : 0; // 80 SAT pts ≈ 0.1 GPA
+  const academicGap = testRelevant ? gpaGap * 0.65 + satGap * 0.35 : gpaGap;
 
   // 1. GPA alignment — drives fit and shows up in strengths/limitations.
   if (gpaGap <= -0.1) {
@@ -195,9 +234,30 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
 
   fit = Math.max(2, Math.min(98, fit));
 
-  // Admit probability — the headline number used to gate the verdict.
+  // Admit probability — uses the blended academic gap (GPA + test) when
+  // available, otherwise falls back to GPA alone.
   const intl = school.intlAcceptance;
-  const admitProbability = Math.max(2, Math.min(95, intl * gpaMultiplier(gpaGap)));
+  const admitProbability = estimateAdmitProbability(intl, academicGap);
+
+  // Surface the test-score context as its own strength/limitation.
+  if (testRelevant) {
+    const rawSatGap = school.median.sat - studentSat!;
+    if (rawSatGap <= -50) {
+      strengths.push(`Test score (${studentSat}) is above the school's median (${school.median.sat}).`);
+      fit += 5;
+    } else if (rawSatGap <= 50) {
+      strengths.push(`Test score sits inside the school's typical range (median ${school.median.sat}).`);
+      fit += 2;
+    } else if (rawSatGap <= 150) {
+      limitations.push(`Test score is ~${rawSatGap} points below the school's median SAT (${school.median.sat}).`);
+      fit -= 3;
+    } else {
+      limitations.push(`Test score is well below the school's median SAT (${school.median.sat}).`);
+      fit -= 8;
+    }
+  } else if (studentSat === null && school.testPolicy === "Required") {
+    limitations.push(`This school requires SAT/ACT scores — add one to your profile to refine the estimate.`);
+  }
 
   // Surface acceptance-rate context as a strength or limitation.
   if (intl >= 70) {
@@ -227,7 +287,7 @@ export function scoreSchool(profile: Profile, school: School): SchoolMatch {
   };
 }
 
-export const RECOMMENDATION_CAP = 150;
+export const RECOMMENDATION_CAP = 200;
 export const LIKELY_FLOOR = 3;
 
 // Below this normalized GPA, the student sits under most school medians and

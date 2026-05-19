@@ -206,6 +206,32 @@ export default function Onboarding() {
                       onChange={(v) => setDraft({ ...draft, extracurriculars: v })}
                     />
                   </Field>
+
+                  <div className="grid grid-cols-2 gap-5">
+                    <Field label="SAT score" hint="Optional · 400–1600. Leave blank if test-optional.">
+                      <input
+                        type="number"
+                        min={400}
+                        max={1600}
+                        step={10}
+                        value={draft.satScore ?? ""}
+                        onChange={(e) => setDraft({ ...draft, satScore: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder="e.g. 1420"
+                        className="input"
+                      />
+                    </Field>
+                    <Field label="ACT score" hint="Optional · 1–36. Use SAT or ACT, not both.">
+                      <input
+                        type="number"
+                        min={1}
+                        max={36}
+                        value={draft.actScore ?? ""}
+                        onChange={(e) => setDraft({ ...draft, actScore: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder="e.g. 32"
+                        className="input"
+                      />
+                    </Field>
+                  </div>
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ArrowUpRight, Calendar, Compass, GraduationCap, House, PaperPlaneTilt, SignOut, SquaresFour, UserCircle, Sparkle, CaretUp } from "@phosphor-icons/react";
+import { ArrowUpRight, BookmarkSimple, Calendar, Compass, GraduationCap, House, PaperPlaneTilt, SignOut, SquaresFour, UserCircle, Sparkle, CaretUp } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ThemeToggle } from "./ThemeToggle";
 import { Logo } from "./Logo";
@@ -11,6 +11,7 @@ import { cn } from "../lib/cn";
 const NAV = [
   { to: "/app", label: "Overview", icon: House, end: true },
   { to: "/app/matches", label: "College Match", icon: SquaresFour },
+  { to: "/app/portfolio", label: "Portfolio", icon: BookmarkSimple },
   { to: "/app/majors", label: "Majors", icon: Compass },
   { to: "/app/timeline", label: "Timeline", icon: Calendar },
   { to: "/app/essays", label: "Essays", icon: PaperPlaneTilt },
@@ -190,6 +191,7 @@ function Crumb({ path }: { path: string }) {
   const last = segments[segments.length - 1];
   const labels: Record<string, string> = {
     matches: "College Match",
+    portfolio: "Portfolio",
     majors: "Major Explorer",
     timeline: "Timeline",
     essays: "Essay Workshop",

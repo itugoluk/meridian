@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowRight, ArrowUpRight, BookOpen, Calendar, CaretRight, ChartLineUp,
+  ArrowRight, ArrowUpRight, BookmarkSimple, BookOpen, Calendar, CaretRight, ChartLineUp,
   Compass, GraduationCap, PaperPlaneTilt, Plus, SquaresFour, Sparkle,
 } from "@phosphor-icons/react";
 import { useStore } from "../store/useStore";
@@ -24,9 +24,15 @@ export default function Dashboard() {
     }
   }, [profile, tutorialSeen]);
 
+  const savedIds = useStore((s) => s.savedSchoolIds);
   const matches = useMemo(() => (profile ? recommendSchools(profile).matches : []), [profile]);
   const majors = useMemo(() => (profile ? recommendMajors(profile) : []), [profile]);
-  const distribution = useMemo(() => distributionFor(matches), [matches]);
+  const portfolio = useMemo(
+    () => savedIds.map((id) => matches.find((m) => m.school.id === id)).filter((m): m is NonNullable<typeof m> => Boolean(m)),
+    [savedIds, matches]
+  );
+  const portfolioDistribution = useMemo(() => distributionFor(portfolio), [portfolio]);
+  const matchDistribution = useMemo(() => distributionFor(matches), [matches]);
   const timeline = useMemo(() => buildTimeline(profile), [profile]);
   const activePhase = timeline.find((p) => p.status === "Active") ?? timeline[0];
 
@@ -64,17 +70,54 @@ export default function Dashboard() {
 
       {/* Bento — 6 col asymmetric */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-6 md:auto-rows-[minmax(0,_auto)]">
-        {/* Distribution — wide hero card */}
-        <BentoCard className="md:col-span-4" kicker="Portfolio balance" to="/app/matches" linkLabel="View all matches">
-          <div className="grid grid-cols-3 gap-6">
-            <Distribution label="Reach" count={distribution.reach} color="bg-accent" />
-            <Distribution label="Target" count={distribution.target} color="bg-ink-950 dark:bg-white" />
-            <Distribution label="Likely" count={distribution.likely} color="bg-emerald-500" />
-          </div>
-          <div className="mt-7 text-[13px] leading-relaxed text-ink-600 dark:text-ink-400">
-            {balanceAdvice(distribution)}
-          </div>
-        </BentoCard>
+        {/* Your portfolio — wide hero card */}
+        {portfolio.length > 0 ? (
+          <BentoCard
+            className="md:col-span-4"
+            kicker="Your portfolio"
+            to="/app/portfolio"
+            linkLabel="Open portfolio"
+          >
+            <div className="grid grid-cols-3 gap-6">
+              <Distribution label="Reach" count={portfolioDistribution.reach} color="bg-accent" />
+              <Distribution label="Target" count={portfolioDistribution.target} color="bg-ink-950 dark:bg-white" />
+              <Distribution label="Likely" count={portfolioDistribution.likely} color="bg-emerald-500" />
+            </div>
+            <div className="mt-7 text-[13px] leading-relaxed text-ink-600 dark:text-ink-400">
+              {balanceAdvice(portfolioDistribution)}
+            </div>
+          </BentoCard>
+        ) : (
+          <BentoCard
+            className="md:col-span-4"
+            kicker="Build your list"
+            to="/app/matches"
+            linkLabel="Browse College Match"
+          >
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-100 dark:bg-ink-800">
+                <BookmarkSimple size={20} weight="duotone" />
+              </div>
+              <div>
+                <h3 className="font-display text-2xl font-bold tracking-extra-tight">Start your portfolio.</h3>
+                <p className="mt-1 text-[14px] text-ink-500 dark:text-ink-400">
+                  You haven't bookmarked any schools yet. Use the College Match list to pick the ones you'd seriously consider, and we'll track your balance here.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-6 border-t border-ink-200/70 pt-5 dark:border-ink-800/70">
+              <Distribution label="Reach available" count={matchDistribution.reach} color="bg-accent" />
+              <Distribution label="Target available" count={matchDistribution.target} color="bg-ink-950 dark:bg-white" />
+              <Distribution label="Likely available" count={matchDistribution.likely} color="bg-emerald-500" />
+            </div>
+            <Link
+              to="/app/matches"
+              className="mt-6 inline-flex h-10 items-center gap-1.5 rounded-full bg-ink-950 px-4 text-[13px] font-medium text-white dark:bg-white dark:text-ink-950"
+            >
+              Browse College Match <ArrowRight size={13} weight="bold" />
+            </Link>
+          </BentoCard>
+        )}
 
         {/* Top match */}
         <BentoCard className="md:col-span-2 md:row-span-2" kicker="Top match" to="/app/matches" linkLabel="See all">

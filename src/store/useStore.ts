@@ -14,6 +14,10 @@ export type Profile = {
   extracurriculars: string[];
   vibePreferences: string[];
   budgetUsd?: number;
+  // Optional standardized-test scores. Use only the one the student has taken
+  // (or neither for test-optional applicants). SAT range 400–1600, ACT 1–36.
+  satScore?: number;
+  actScore?: number;
 };
 
 export type EssayDraft = {
